@@ -1,110 +1,128 @@
-# Student Assignment Management Dashboard
+# Student, Group & Assignment Management System (Enhanced UI/UX)
 
-A role-based academic management portal built with **React**, **TypeScript**, and **Tailwind CSS (via CDN)**. The application simulates a full-stack client workflow with role-specific views for Students and Instructors, double-confirmation submission validation, and persistence through browser `localStorage` without requiring a backend.
-
----
-
-## 🔗 Live Demo & Repository
-
-- **Live Application:** : https://assignment-dashboard-brown.vercel.app/
-- **GitHub Repository:** : (https://github.com/KrIsH9693/assignment-_dashboard.git)
+An enterprise-grade academic workflow portal engineered with **React 18**, **TypeScript**, and **Tailwind CSS**. Built to fulfill **Task 1 (Core Prototype)** and **Task 2 (Frontend UI/UX Enhancement)**, this application simulates a complete client-side LMS with role-based JWT authentication, course hierarchies, team-based submission acknowledgments, and `localStorage` persistence with zero backend dependencies.
 
 ---
 
-## 👥 Demo Credentials & Role Access
+## 🔗 Live Application & Source
 
-Click the **One-Click Demo Access** buttons on the login screen or sign in manually:
+- **Live Production App:** [Insert your Vercel Link Here]
+- **GitHub Repository:** [Insert your GitHub Repository Link Here]
 
-| Role | Demo Name | Email | Default Password | Access & Permissions |
+---
+
+## 🔐 Authentication & Quick Access Credentials
+
+The portal features interactive **Form Validation**, **Registration for Students & Instructors**, and **JWT Session Token Generation** stored under `portal_jwt_token`.
+
+| Role | Name | Email | Default Password | Permissions & Scope |
 |---|---|---|---|---|
-| **Admin / Instructor** | Dr. Sharma | `sharma@college.edu` | `password123` | Create, edit, and delete coursework; track student submissions and timestamps |
-| **Student** | Rahul Verma | `rahul@student.edu` | `password123` | View assigned tasks, verify drive folder links, submit proof, track progress |
-| **Student** | Aman Singh | `aman@student.edu` | `password123` | Student portal view with isolated progress tracking |
-| **Student** | Priya Patel | `priya@student.edu` | `password123` | Student portal view with isolated progress tracking |
+| **Instructor** | Dr. Sharma | `sharma@college.edu` | `password123` | Create/Claim courses, publish coursework (Individual/Group), inspect student submissions, manual status override |
+| **Student (Leader)** | Rahul Verma | `rahul@student.edu` | `password123` | CS301 & CS302 enrolled; Team Alpha Leader (submits for whole team) |
+| **Student (Member)** | Aman Singh | `aman@student.edu` | `password123` | CS301 & CS302 enrolled; Team Alpha Member (status syncs with leader) |
+| **Student (Unassigned)** | Priya Patel | `priya@student.edu` | `password123` | CS301 enrolled; Unassigned (sees prompt to form/join a group) |
+
+> 💡 **Self-Registration:** You can also register a brand new Student or Instructor directly via the **Create Account** tab.
 
 ---
 
-## 🏛️ Application Architecture & Data Flow
+## 🏛️️ Application Architecture & User Flow
 
 ```text
-               User Authentication / Role Switcher
-                              │
-               ┌──────────────┴──────────────┐
-               ▼                             ▼
-       Student Session                Instructor Session
-               │                             │
-    ┌──────────┴──────────┐       ┌──────────┴──────────┐
-    ▼                     ▼       ▼                     ▼
-Personal Coursework   Progress    Coursework CRUD    Student Matrix
-     List             Analytics   & Assignments      & Live Status
-        │                            │
-        ▼                            ▼
-  Two-Step Modal                     Manual Overrides
-  Verification Flow                  & Inspections
-        │                            │
-        └──────────────┬─────────────┘
-                       ▼
-             localStorage Persistence
+                     Authentication Gate
+                  (Login / Register / JWT)
+                             │
+            ┌────────────────┴────────────────┐
+            ▼                                 ▼
+   Student Workspace                 Instructor Control Panel
+            │                                 │
+     Enrolled Courses                  Courses Management
+     (CS301, CS302)                   (Create, Filter, Claim)
+            │                                 │
+   Course Assignments View           Assignment Creator & Matrix
+            │                         (Individual vs Group Config)
+   ┌────────┴────────┐                        │
+   ▼                 ▼                        ▼
+Individual        Group Task            Live Student Roster
+Task Flow         (Leader/Member)        (Analytics & Overrides)
+   │                 │                        │
+   └────────┬────────┘                        │
+            ▼                                 ▼
+      Two-Step Double                   Real-time Metric
+     Confirmation Modal                   Calculations
+            │                                 │
+            └────────────────┬────────────────┘
+                             ▼
+                Local State & Storage Sync
 
-##Core Features
-🎓 Student Portal
-Progress Tracking: Dynamic calculation of overall progress based strictly on tasks mapped to the student.
+Key Implemented Features (Task 1 & Task 2)
+1. 🛡️ Authentication & JWT Flow
+Tabbed role switcher (Student vs Professor) with instantaneous demo access chips.
 
-##Assignment Cards: Displays deadline, completion status badge (Submitted vs Pending), and instructor material links.
+Account Registration for students (auto-enrolled into curriculum) and instructors.
 
-##Two-Step Double Confirmation:
+Client-side JWT session token creation (Header.Payload.Signature in Base64) with realistic verification delay and auto-clear on logout.
 
-Step 1: Verifies the Google Drive submission folder and lets the student attach their Drive/GitHub link or upload a local file preview.
+2. 📚 Course-Level Hierarchy
+Student Dashboard: Displays enrolled semester courses with individual progress bars before drilling down into coursework.
 
-Step 2: Final confirmation prompt saving the timestamped record and submission remarks.
+Instructor Dashboard: Displays assigned courses, quick course filter dropdown, and a "+ Add Course" modal to create custom curriculum offerings on the fly.
 
-Role-Based Isolation: Students only see assignments assigned to them.
+3. 👥 Group vs Individual Submission Logic
+Individual Assignments: Direct submission confirmation accessible to any assigned student.
 
-##👨‍🏫 Instructor / Admin Portal
-Key Metrics: Real-time active assignment count, enrolled students, and global submission rate.
+Group Assignments (Leader Exclusivity):
 
-##Coursework Management: Create, edit, and delete coursework with title, description, deadline, folder links, and custom student assignments.
+Only the designated Group Leader can click Submit (Leader).
 
-##Student Progress Breakdown: Per-assignment student list showing submission status (0% vs 100%), exact submission timestamps, and attached notes/URLs.
+When acknowledged by the leader, all member accounts (e.g. Aman Singh) immediately transition to Acknowledged with leader metadata.
 
-##Manual Overrides: Quick status toggle for offline evaluations.
+Unassigned Student Guard: Displays a dedicated amber banner ("You are not part of any group. Form or join one to submit this assignment.") disabling submission until a group is joined.
 
-##🛠️ Tech Stack & Decisions
-Framework: React 18+ with Vite
+4. 📊 High-Fidelity UI/UX & Responsive Controls
+Custom Animated Progress Bars computing real-time semester and course completion percentages.
 
-Type Safety: TypeScript (verbatimModuleSyntax compliant)
+Sidebar View Filters: Snappy one-click toggle between All Assignments, Pending Only, and Completed Only.
 
-Styling: Tailwind CSS loaded via CDN (<script src="https://cdn.tailwindcss.com"></script>)
+Double-confirmation submission modal supporting OneDrive folder verification, local file previews, and submission remarks.
 
-State Management: React Hooks (useState, useEffect)
+Mobile-responsive layout transitioning smoothly between desktop sidebar and stacked mobile views.
 
-Storage: Browser localStorage for offline persistence and simulated backend behavior
+🛠️ Tech Stack & Implementation Details
+Core Library: React 18 (Hooks: useState, useEffect, Custom Storage Handlers)
 
-Design System: Responsive multi-panel layout with modular cards, progress bars, and accessible modals
+Language: TypeScript (Strict type interfaces for Course, StudentGroup, Assignment, User)
 
-##📂 Project Structure
+Styling: Tailwind CSS (CDN-based utility classes with responsive breakpoints)
+
+Build Tool: Vite
+
+Persistence: LocalStorage API with structured schema versioning (portal_users_v2, portal_courses_v2, portal_assignments_v2)
+
+**#Project Structure#**
+
 assignment-dashboard/
 ├── public/
 ├── src/
-│   ├── assets/
 │   ├── components/
-│   │   ├── AssignmentCard.tsx      # Modular assignment card with deadline alerts
-│   │   ├── AssignmentModal.tsx     # Coursework creation and edit modal
-│   │   ├── ConfirmationModal.tsx   # Two-step submission confirmation modal
-│   │   ├── Navbar.tsx              # Brand header and current user info
-│   │   ├── ProgressBar.tsx         # Reusable animated completion bar
-│   │   ├── Sidebar.tsx             # Responsive navigation and view filters
-│   │   └── StudentProgress.tsx     # Instructor row view for individual student tracking
+│   │   ├── AssignmentCard.tsx      # Modular card with submission urgency badges
+│   │   ├── AssignmentModal.tsx     # Assignment publisher (OneDrive, Group/Indiv)
+│   │   ├── ConfirmationModal.tsx   # Two-step submission confirmation dialog
+│   │   ├── CourseModal.tsx         # Instructor course creation modal
+│   │   ├── Navbar.tsx              # Top header with user identity badge
+│   │   ├── ProgressBar.tsx         # Multi-size animated completion component
+│   │   ├── Sidebar.tsx             # Sidebar with filters ('all', 'pending', 'completed')
+│   │   └── StudentProgress.tsx     # Instructor student inspection row
 │   ├── data/
-│   │   └── mockData.ts             # Initial student and instructor dataset
+│   │   └── mockData.ts             # Initial courses, users, and assignment seeds
 │   ├── pages/
-│   │   ├── AdminDashboard.tsx      # Instructor control panel
-│   │   ├── Login.tsx               # Role-tabbed login screen with quick demo accounts
-│   │   └── StudentDashboard.tsx    # Student submission view
+│   │   ├── AdminDashboard.tsx      # Instructor curriculum & submissions console
+│   │   ├── Login.tsx               # JWT Authentication and registration portal
+│   │   └── StudentDashboard.tsx    # Student course cards & assignment flows
 │   ├── utils/
-│   │   └── storage.ts              # localStorage sync helpers
-│   ├── types.ts                    # Strong TypeScript models
-│   ├── App.tsx                     # Main layout and role-based view routing
+│   │   └── storage.ts              # JWT generator & localStorage sync engine
+│   ├── types.ts                    # Unified TypeScript type definitions
+│   ├── App.tsx                     # Top-level view router & state synchronizer
 │   ├── main.tsx
 │   └── index.css
 ├── index.html
