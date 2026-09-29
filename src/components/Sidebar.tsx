@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-full md:w-64 bg-white md:min-h-[calc(100vh-4rem)] border-b md:border-b-0 md:border-r border-slate-200 p-4 flex flex-col justify-between shrink-0">
       <div className="space-y-6">
         {/* User Card */}
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
             {currentUser.name.charAt(0)}
           </div>
@@ -36,51 +36,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Navigation Filters */}
-        {onSelectFilter && (
+        {/* Filters */}
+        {onSelectFilter && currentUser.role === 'student' && (
           <nav className="space-y-1">
             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-2">
               Views
             </p>
             <button
               onClick={() => onSelectFilter('all')}
-              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
                 activeFilter === 'all'
-                  ? 'bg-indigo-50 text-indigo-700'
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <span>📁 All Assignments</span>
+              <span>📁</span>
+              <span>All Assignments</span>
             </button>
             <button
               onClick={() => onSelectFilter('pending')}
-              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
                 activeFilter === 'pending'
-                  ? 'bg-indigo-50 text-indigo-700'
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <span>⏳ Pending Only</span>
+              <span>⏳</span>
+              <span>Pending Only</span>
             </button>
             <button
               onClick={() => onSelectFilter('completed')}
-              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
                 activeFilter === 'completed'
-                  ? 'bg-indigo-50 text-indigo-700'
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <span>✅ Completed Only</span>
+              <span>✅</span>
+              <span>Completed Only</span>
             </button>
           </nav>
         )}
       </div>
 
-      {/* Logout */}
       <div className="pt-4 border-t border-slate-100 mt-4">
         <button
           onClick={onLogout}
-          className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition text-left flex items-center gap-2"
+          className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition text-left flex items-center gap-2"
         >
           <span>🚪</span> Logout
         </button>

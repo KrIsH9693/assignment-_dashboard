@@ -1,43 +1,55 @@
 import React, { useState } from 'react';
-import type { User, Assignment } from '../types';
+import type { User, Assignment, Course } from '../types';
 import { AssignmentModal } from '../components/AssignmentModal';
-import { StudentProgress } from '../components/StudentProgress';
+import { CourseModal } from '../components/CourseModal';
 import { ProgressBar } from '../components/ProgressBar';
 
 interface AdminDashboardProps {
   currentUser: User;
+  courses: Course[];
   assignments: Assignment[];
   allUsers: User[];
   onUpdateAssignments: (assignments: Assignment[]) => void;
+  onUpdateCourses: (courses: Course[]) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentUser,
+  courses,
   assignments,
   allUsers,
   onUpdateAssignments,
+  onUpdateCourses,
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
 
-  // Role isolation: Admin ko sirf apne create kiye hue assignments dikhenge
-  const myAssignments = assignments.filter((asg) => asg.createdBy === currentUser.id);
+  // Professor ke mapped courses (agar koi naya registered admin hai toh wo courses claim ya add kar sake)
+  const myCourses = courses.filter((c) => c.instructorId === currentUser.id);
   const studentsList = allUsers.filter((u) => u.role === 'student');
 
-  // Stats calculation
-  const totalCreated = myAssignments.length;
-  let totalAssignedSlots = 0;
-  let totalSubmittedSlots = 0;
+  const myAssignments = assignments.filter((asg) => asg.createdBy === currentUser.id);
+  const displayedAssignments =
+    selectedCourseFilter === 'all'
+      ? myAssignments
+      : myAssignments.filter((a) => a.courseId === selectedCourseFilter);
 
-  myAssignments.forEach((asg) => {
-    totalAssignedSlots += asg.students.length;
-    totalSubmittedSlots += asg.students.filter((s) => s.submitted).length;
-  });
+  // Quick Action: Link unassigned template courses to this new instructor
+  const handleClaimTemplateCourses = () => {
+    const updatedCourses = courses.map((crs) => ({
+      ...crs,
+      instructorId: currentUser.id,
+    }));
+    onUpdateCourses(updatedCourses);
+  };
 
-  const overallSubmissionRate =
-    totalAssignedSlots === 0 ? 0 : Math.round((totalSubmittedSlots / totalAssignedSlots) * 100);
+  const handleAddCourse = (newCourse: Course) => {
+    const nextCourses = [newCourse, ...courses];
+    onUpdateCourses(nextCourses);
+  };
 
-  // Handlers
   const handleSaveAssignment = (data: Omit<Assignment, 'id' | 'createdBy'>) => {
     if (editingAssignment) {
       const updated = assignments.map((asg) =>
@@ -56,31 +68,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleDeleteAssignment = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this assignment?')) {
+    if (window.confirm('Are you sure you want to delete this coursework assignment?')) {
       const filtered = assignments.filter((asg) => asg.id !== id);
       onUpdateAssignments(filtered);
     }
-  };
-
-  const handleToggleStudentStatus = (assignmentId: string, studentId: string) => {
-    const updated = assignments.map((asg) => {
-      if (asg.id !== assignmentId) return asg;
-      const updatedStudents = asg.students.map((stu) => {
-        if (stu.studentId === studentId) {
-          const nextStatus = !stu.submitted;
-          return {
-            ...stu,
-            submitted: nextStatus,
-            submittedAt: nextStatus
-              ? new Date().toLocaleDateString('en-GB') + ' (Verified by Instructor)'
-              : undefined,
-          };
-        }
-        return stu;
-      });
-      return { ...asg, students: updatedStudents };
-    });
-    onUpdateAssignments(updated);
   };
 
   return (
@@ -88,94 +79,165 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Professor Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Welcome back, {currentUser.name}. Coursework aur student progress monitor karein.
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Instructor Control Portal 👨‍🏫
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Welcome, {currentUser.name}. Orchestrate courses, deliverables, and submissions.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditingAssignment(null);
-            setIsModalOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-sm self-start sm:self-auto active:scale-95"
-        >
-          <span>+ Create Assignment</span>
-        </button>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsCourseModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm transition shadow-sm"
+          >
+            <span>+ Add Course</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={myCourses.length === 0}
+            onClick={() => {
+              setEditingAssignment(null);
+              setIsAssignmentModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white font-semibold text-xs sm:text-sm transition shadow-lg shadow-indigo-100 active:scale-95"
+          >
+            <span>+ Create Assignment</span>
+          </button>
+        </div>
       </div>
 
       {/* Analytics Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Active Assignments
+            Courses Taught
           </span>
-          <p className="text-2xl font-bold text-slate-900">{totalCreated}</p>
+          <p className="text-2xl font-bold text-slate-900">{myCourses.length}</p>
         </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+            Active Deliverables
+          </span>
+          <p className="text-2xl font-bold text-slate-900">{myAssignments.length}</p>
+        </div>
+
         <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
             Enrolled Students
           </span>
-          <p className="text-2xl font-bold text-slate-900">{studentsList.length}</p>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Overall Submission Rate
-          </span>
-          <p className="text-2xl font-bold text-indigo-600">
-            {overallSubmissionRate}%{' '}
-            <span className="text-xs font-normal text-slate-500">
-              ({totalSubmittedSlots}/{totalAssignedSlots})
-            </span>
-          </p>
+          <p className="text-2xl font-bold text-indigo-600">{studentsList.length}</p>
         </div>
       </div>
 
-      {/* Course Assignments List */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Course Assignments ({totalCreated})</h2>
-
-        {myAssignments.length === 0 ? (
-          <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 shadow-sm">
-            <p className="text-sm text-slate-500">Aapne abhi tak koi assignment create nahi kiya hai.</p>
+      {/* Zero Courses Warning Banner for New Instructors */}
+      {myCourses.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-amber-900 flex items-center gap-2">
+              <span>⚠️</span> No courses assigned to your instructor profile yet
+            </h4>
+            <p className="text-xs text-amber-700">
+              Create a custom course (e.g. CS401) or claim default semester courses to start publishing assignments.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="mt-3 text-xs font-semibold text-indigo-600 hover:underline"
+              onClick={handleClaimTemplateCourses}
+              className="px-3.5 py-2 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-xl transition"
             >
-              + Create your first assignment
+              Claim Default Courses
+            </button>
+            <button
+              onClick={() => setIsCourseModalOpen(true)}
+              className="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm"
+            >
+              + Add New Course
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Filter and Course Selection */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase">Filter Course:</span>
+          <select
+            value={selectedCourseFilter}
+            onChange={(e) => setSelectedCourseFilter(e.target.value)}
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All Courses ({myAssignments.length})</option>
+            {myCourses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} - {c.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <span className="text-xs text-slate-400">
+          Showing {displayedAssignments.length} assignment item(s)
+        </span>
+      </div>
+
+      {/* Assignments List */}
+      <div className="space-y-4">
+        {displayedAssignments.length === 0 ? (
+          <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 shadow-sm">
+            <p className="text-sm text-slate-500 font-medium">No coursework assignments found.</p>
+            {myCourses.length > 0 && (
+              <button
+                onClick={() => setIsAssignmentModalOpen(true)}
+                className="mt-3 text-xs font-semibold text-indigo-600 hover:underline"
+              >
+                + Create an assignment now
+              </button>
+            )}
+          </div>
         ) : (
-          myAssignments.map((asg) => {
-            const submittedCount = asg.students.filter((s) => s.submitted).length;
-            const rate =
-              asg.students.length === 0
-                ? 0
-                : Math.round((submittedCount / asg.students.length) * 100);
+          displayedAssignments.map((asg) => {
+            const courseRef = courses.find((c) => c.id === asg.courseId);
+            const isGroup = asg.submissionType === 'group';
+            const submittedCount = isGroup
+              ? asg.groups?.filter((g) => g.submitted).length || 0
+              : asg.students.filter((s) => s.submitted).length;
+
+            const totalSlots = isGroup ? asg.groups?.length || 0 : asg.students.length;
+            const completionRate =
+              totalSlots === 0 ? 0 : Math.round((submittedCount / totalSlots) * 100);
 
             return (
               <div
                 key={asg.id}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden"
+                className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden"
               >
-                {/* Assignment Info Header */}
-                <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/60">
-                  <div className="space-y-1">
+                <div className="p-5 sm:p-6 bg-slate-50/70 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-slate-900 text-base">{asg.title}</h3>
-                      <span className="text-xs px-2.5 py-0.5 rounded-lg bg-slate-200/80 text-slate-700 font-semibold">
-                        Due: {asg.deadline}
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700">
+                        {courseRef ? courseRef.code : 'COURSE'}
                       </span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
+                        {isGroup ? '👥 Group Submission' : '👤 Individual Submission'}
+                      </span>
+                      <span className="text-xs text-slate-500">Due: {asg.deadline}</span>
                     </div>
+
+                    <h3 className="font-bold text-slate-900 text-lg">{asg.title}</h3>
                     <p className="text-xs text-slate-500 line-clamp-1">{asg.description}</p>
+
                     <a
                       href={asg.driveLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-indigo-600 font-medium hover:underline inline-flex items-center gap-1 mt-0.5"
+                      className="text-xs text-indigo-600 font-semibold hover:underline inline-flex items-center gap-1"
                     >
-                      Folder Material ↗
+                      OneDrive Material Folder ↗
                     </a>
                   </div>
 
@@ -184,7 +246,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       type="button"
                       onClick={() => {
                         setEditingAssignment(asg);
-                        setIsModalOpen(true);
+                        setIsAssignmentModalOpen(true);
                       }}
                       className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition shadow-sm"
                     >
@@ -193,44 +255,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <button
                       type="button"
                       onClick={() => handleDeleteAssignment(asg.id)}
-                      className="px-3.5 py-1.5 text-xs font-semibold text-red-600 bg-white border border-red-200 hover:bg-red-50 rounded-xl transition shadow-sm"
+                      className="px-3.5 py-1.5 text-xs font-semibold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-xl transition shadow-sm"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
 
-                {/* Assignment Level Progress Indicator */}
-                <div className="px-5 py-3 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="px-6 py-3 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                   <span className="font-semibold text-slate-700">
-                    Student Submissions ({submittedCount} of {asg.students.length} completed)
+                    Status ({submittedCount} of {totalSlots} {isGroup ? 'groups' : 'students'} acknowledged)
                   </span>
                   <div className="flex items-center gap-3 w-full sm:w-48">
                     <div className="flex-1">
                       <ProgressBar
-                        progress={rate}
+                        progress={completionRate}
                         size="sm"
-                        color={rate === 100 ? 'emerald' : 'indigo'}
+                        color={completionRate === 100 ? 'emerald' : 'indigo'}
                       />
                     </div>
-                    <span className="font-bold text-indigo-600 w-8 text-right">{rate}%</span>
+                    <span className="font-bold text-indigo-600">{completionRate}%</span>
                   </div>
-                </div>
-
-                {/* Modular Student Progress Rows */}
-                <div className="p-3 divide-y divide-slate-100">
-                  {asg.students.length === 0 ? (
-                    <p className="text-xs text-slate-400 p-3">No students assigned to this task.</p>
-                  ) : (
-                    asg.students.map((stu) => (
-                      <StudentProgress
-                        key={stu.studentId}
-                        student={stu}
-                        assignmentId={asg.id}
-                        onToggleStatus={handleToggleStudentStatus}
-                      />
-                    ))
-                  )}
                 </div>
               </div>
             );
@@ -241,14 +286,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Assignment Modal */}
       <AssignmentModal
         key={editingAssignment?.id || 'new'}
-        isOpen={isModalOpen}
+        isOpen={isAssignmentModalOpen}
         onClose={() => {
-          setIsModalOpen(false);
+          setIsAssignmentModalOpen(false);
           setEditingAssignment(null);
         }}
         onSubmit={handleSaveAssignment}
         studentsList={studentsList}
+        courses={myCourses}
         initialData={editingAssignment}
+      />
+
+      {/* Course Modal */}
+      <CourseModal
+        isOpen={isCourseModalOpen}
+        onClose={() => setIsCourseModalOpen(false)}
+        onSubmit={handleAddCourse}
+        instructorId={currentUser.id}
+        studentsList={studentsList}
       />
     </div>
   );
